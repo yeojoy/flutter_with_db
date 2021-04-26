@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 import 'addTodo.dart';
+import 'clear_list.dart';
 import 'todo.dart';
 
 void main() {
@@ -20,7 +21,8 @@ class MyApp extends StatelessWidget {
       routes: {
         '/': (context) => DatabaseApp(database),
         // pickme no need to send a db object
-        '/add': (context) => AddTodoApp()
+        '/add': (context) => AddTodoApp(),
+        '/clearList': (context) => ClearTodoList(database),
       },
     );
   }
@@ -55,6 +57,17 @@ class _DatabaseAppState extends State<DatabaseApp> {
     return Scaffold(
       appBar: AppBar(
         title: Text("My TODO app"),
+        actions: <Widget> [
+          MaterialButton(
+            onPressed: () async {
+              await Navigator.of(context).pushNamed('/clearList');
+              _refreshList();
+            },
+            child: Text("완료한 일",
+              style: TextStyle(color: Colors.white)
+            )
+          ),
+        ]
       ),
       body: Container(
         child: Center(
@@ -71,8 +84,7 @@ class _DatabaseAppState extends State<DatabaseApp> {
               case ConnectionState.done:
                 if (snapshot.hasData && snapshot.data != null) {
                   return ListView.builder(
-                    itemBuilder: (content, index) {
-                      debugPrint("content : $content and index : $index");
+                    itemBuilder: (context, index) {
                       var todo = snapshot.data?.elementAt(index) as Todo;
                       return makeTodoListTile(context, todo);
                       // return makeTodoCard(todo);
@@ -83,6 +95,7 @@ class _DatabaseAppState extends State<DatabaseApp> {
                   return Text('No data!');
                 }
             }
+            // pickme dead code.
             return CircularProgressIndicator();
           },
           future: todoList,
@@ -148,7 +161,7 @@ class _DatabaseAppState extends State<DatabaseApp> {
     //     whereArgs: [todo.id]
     // );
     // pickme, sqlite doesn't have a boolean type. https://www.sqlite.org/datatype3.html
-    int active = todo.active ? 1 : 0;
+    int active = todo.active != null ? (todo.active! ? 1 : 0) : 0;
     // pickme use raw query
     await database.rawUpdate('update $tableName set $columnActive = $active where $columnId = ${todo.id}');
 
@@ -198,11 +211,11 @@ class _DatabaseAppState extends State<DatabaseApp> {
             ],
           )
         ),
-        leading: Icon(todo.active ? Icons.verified : Icons.verified_outlined),
+        leading: Icon(todo.active! ? Icons.verified : Icons.verified_outlined),
         onTap: () {
           debugPrint(
               'Todo : ${todo.id}, ${todo.title}, ${todo.content}, ${todo.active}');
-          todo.active = !todo.active;
+          todo.active = !todo.active!;
           debugPrint(
               'Todo : ${todo.id}, ${todo.title}, ${todo.content}, ${todo.active}');
           _updateTodo(todo);

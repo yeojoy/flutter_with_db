@@ -6,10 +6,10 @@ final String columnActive = 'active';
 
 class Todo {
   // pickme
-  late int id = 1;
+  late int? id = 1;
   late String title;
   late String content;
-  late bool active;
+  late bool? active;
 
   Map<String, dynamic> toMap() {
     var map = <String, dynamic> {
@@ -26,5 +26,5 @@ class Todo {
   }
 
   // pickme
-  Todo({required this.title, required this.content, required this.active});
+  Todo({this.id, required this.title, required this.content, this.active});
 }
