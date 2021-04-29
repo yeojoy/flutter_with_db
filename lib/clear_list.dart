@@ -36,6 +36,10 @@ class _ClearTodoListState extends State<ClearTodoList> {
                   return CircularProgressIndicator();
                 case ConnectionState.done: {
                   if (snapshot.hasData) {
+                    // pickme
+                    if (snapshot.data != null && snapshot.data!.isEmpty) {
+                      return Text("No data.");
+                    }
                     return ListView.builder(
                       itemBuilder: (context, index) {
                         var todo = snapshot.data?.elementAt(index) as Todo;
@@ -93,8 +97,16 @@ class _ClearTodoListState extends State<ClearTodoList> {
 
   Future<List<Todo>> getClearList() async {
     final Database database = await widget.database;
+    // https://www.sqlitetutorial.net/sqlite-where/
     List<Map<String, dynamic>> maps =
       await database.rawQuery('select * from $tableName where $columnActive = 1');
+    // List<Map<String, dynamic>> maps = await database.query(tableName, columns: null, where: "$columnActive = ?", whereArgs: [ 1 ]);
+    // List<Map<String, dynamic>> maps = await database.query(
+    //     tableName,
+    //     columns: null, // null인 경우 전체 columns을 가져
+    //     where: "$columnContent LIKE ? or $columnContent LIKE ?",
+    //     whereArgs: [ "pick%", "beers" ]
+    // );
 
     return List.generate(maps.length, (i) {
       return Todo(
@@ -107,7 +119,8 @@ class _ClearTodoListState extends State<ClearTodoList> {
 
   _removeAllTodos() async {
     final Database database = await widget.database;
-    database.rawDelete("delete from $tableName where $columnActive = 1");
+    // database.rawDelete("delete from $tableName where $columnActive = 1");
+    database.delete(tableName, where: "$columnActive = ?", whereArgs: [ 1 ]);
     setState(() {
       clearList = getClearList();
     });
