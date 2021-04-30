@@ -134,7 +134,8 @@ class _DatabaseAppState extends State<DatabaseApp> {
   // (R)EAD select all todo items
   Future<List<Todo>> getTodos() async {
     final Database database = await widget.db;
-    final List<Map<String, dynamic>> maps = await database.query(tableName);
+    // final List<Map<String, dynamic>> maps = await database.query(tableName);
+    final List<Map<String, dynamic>> maps = await database.rawQuery("SELECT * FROM $tableName");
     debugPrint('Map length ${maps.length}');
 
     return List.generate(maps.length, (i) {
@@ -171,11 +172,12 @@ class _DatabaseAppState extends State<DatabaseApp> {
   /// (D)ELETE delete todo item in Database
   void _deleteTodo(Todo todo) async {
     final Database database = await widget.db;
-    await database.delete(
-      tableName,
-      where: '$columnId = ?',
-      whereArgs: [todo.id]
-    );
+    // await database.delete(
+    //   tableName,
+    //   where: '$columnId = ?',
+    //   whereArgs: [todo.id]
+    // );
+    await database.rawDelete("DELETE FROM $tableName WHERE $columnId = ${todo.id}");
 
     _refreshList();
   }
