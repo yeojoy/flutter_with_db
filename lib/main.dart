@@ -51,6 +51,7 @@ class DatabaseApp extends StatefulWidget {
 
 class _DatabaseAppState extends State<DatabaseApp> {
   late Future<List<Todo>> todoList;
+  late TextEditingController _searchTextEditingController;
 
   @override
   Widget build(BuildContext context) {
@@ -63,44 +64,17 @@ class _DatabaseAppState extends State<DatabaseApp> {
               await Navigator.of(context).pushNamed('/clearList');
               _refreshList();
             },
+            onLongPress: () {
+              _makeTextData();
+            },
             child: Text("완료한 일",
               style: TextStyle(color: Colors.white)
             )
           ),
         ]
       ),
-      body: Container(
-        child: Center(
-        // PICKME should be Generic at FutureBuilder
-        child: FutureBuilder<List<Todo>>(
-          builder: (context, snapshot) {
-            switch (snapshot.connectionState) {
-              case ConnectionState.none:
-                return CircularProgressIndicator();
-              case ConnectionState.waiting:
-                return CircularProgressIndicator();
-              case ConnectionState.active:
-                return CircularProgressIndicator();
-              case ConnectionState.done:
-                if (snapshot.hasData && snapshot.data != null) {
-                  return ListView.builder(
-                    itemBuilder: (context, index) {
-                      var todo = snapshot.data?.elementAt(index) as Todo;
-                      return makeTodoListTile(context, todo);
-                      // return makeTodoCard(todo);
-                    },
-                    itemCount: snapshot.data?.length,
-                  );
-                } else {
-                  return Text('No data!');
-                }
-            }
-            // pickme dead code.
-            return CircularProgressIndicator();
-          },
-          future: todoList,
-        )
-      )),
+      body: _getBody(),
+
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final todo = await Navigator.of(context).pushNamed('/add') as Todo;
@@ -110,8 +84,8 @@ class _DatabaseAppState extends State<DatabaseApp> {
         },
         child: Icon(Icons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation
-          .endFloat, // This trailing comma makes auto-formatting nicer for build methods.
+      // This trailing comma makes auto-formatting nicer for build methods.
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -119,6 +93,7 @@ class _DatabaseAppState extends State<DatabaseApp> {
   void initState() {
     super.initState();
     todoList = getTodos();
+    _searchTextEditingController = TextEditingController();
   }
 
   // (C)REATE insert todo item
@@ -184,12 +159,91 @@ class _DatabaseAppState extends State<DatabaseApp> {
     _refreshList();
   }
 
-  void _refreshList() {
+  void _query(String text) async {
+    final database = await widget.db;
+
+    final List<Map<String, dynamic>> maps = await database.rawQuery("SELECT * FROM $tableName WHERE $columnTitle LIKE '%$text%' OR $columnContent LIKE '%$text%'");
+
+    setState(() {
+      todoList = getSearchResult(maps);
+    });
+  }
+
+  Future<List<Todo>> getSearchResult(List<Map<String, dynamic>> maps) async {
+    return List.generate(maps.length, (i) {
+      bool active = maps[i][columnActive] == 1 ? true : false;
+      var todo = Todo(
+          title: maps[i][columnTitle].toString(),
+          content: maps[i][columnContent].toString(),
+          active: active);
+      todo.setId(maps[i][columnId]);
+
+      debugPrint("todo: ${todo.id}, ${todo.title}, ${todo.content}");
+      return todo;
+    });
+  }
+
+  _refreshList() {
     setState(() {
       todoList = getTodos();
     });
   }
 
+  Widget _getBody() {
+    return Container(
+        child: Center(
+          // PICKME should be Generic at FutureBuilder
+            child: Column(
+              children: <Widget> [
+                Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: TextField(
+                    controller: _searchTextEditingController,
+                    maxLines: 1,
+                    onChanged: (text) {
+                      final query = text.trim();
+                      if (query.length >= 2) {
+                        debugPrint("query: $query");
+                        _query(query.trim());
+                      } else {
+                        _refreshList();
+                      }
+                    },
+                  ),
+                ),
+                FutureBuilder<List<Todo>>(
+                  builder: (context, snapshot) {
+                    switch (snapshot.connectionState) {
+                      case ConnectionState.none:
+                        return CircularProgressIndicator();
+                      case ConnectionState.waiting:
+                        return CircularProgressIndicator();
+                      case ConnectionState.active:
+                        return CircularProgressIndicator();
+                      case ConnectionState.done:
+                        if (snapshot.hasData && snapshot.data != null) {
+                          return snapshot.data!.length > 0 ? Expanded(
+                            child: ListView.builder(
+                              itemBuilder: (context, index) {
+                                var todo = snapshot.data?.elementAt(index) as Todo;
+                                return makeTodoListTile(context, todo);
+                                // return makeTodoCard(todo);
+                              },
+                              itemCount: snapshot.data?.length,
+                            ),
+                          ) : Text('No data!');
+                        }
+                    }
+                    // pickme dead code.
+                    return CircularProgressIndicator();
+                  },
+                  future: todoList,
+                ),
+              ],
+            )
+        )
+    );
+  }
   // pickme make children with Card Widget, but there is no tap event.
   Card makeTodoCard(Todo todo) {
     return Card(
@@ -283,5 +337,28 @@ class _DatabaseAppState extends State<DatabaseApp> {
         );
       }
     );
+  }
+
+  _makeTextData() {
+    var todo = Todo(title: "Children", content: "Pick up EY at school.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Children", content: "Pick up DY at daycare.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Bank", content: "Withdraw \$100.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Work", content: "Daily meeting at 12pm", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Work", content: "Quick demo.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Back", content: "Send \$449.80 to wife.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Grocery", content: "Costco at 5pm.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Parc", content: "aller au parc.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "Français", content: "apprendre le cours demain matin.", active: false);
+    _insertTodo(todo);
+    todo = Todo(title: "examen", content: "prendre en examen de français.", active: false);
+    _insertTodo(todo);
   }
 }
