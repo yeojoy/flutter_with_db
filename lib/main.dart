@@ -125,8 +125,10 @@ class _DatabaseAppState extends State<DatabaseApp> {
   void _insertTodo(Todo todo) async {
     final Database database = await widget.db;
     // insert function in sqflite library
-    await database.insert(tableName, todo.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    // await database.insert(tableName, todo.toMap(),
+    //     conflictAlgorithm: ConflictAlgorithm.replace);
+    // await database.rawInsert("INSERT INTO $tableName($columnTitle, $columnContent, $columnActive) VALUES('${todo.title}', '${todo.content}', ${todo.active! ? 1 : 0})");
+    await database.rawInsert("INSERT INTO $tableName($columnTitle, $columnContent, $columnActive) VALUES(?, ?, ?)", [todo.title, todo.content, todo.active! ? 1 : 0]);
 
     _refreshList();
   }
