@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'addTodo.dart';
 import 'clear_list.dart';
+import 'add_todo.dart';
 import 'todo.dart';
 
 void main() {
@@ -17,11 +17,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'My todo',
       theme: ThemeData(primarySwatch: Colors.teal),
-      initialRoute: '/',
+      initialRoute: 'first',
       routes: {
-        '/': (context) => DatabaseApp(database),
+        // pickme route name은 약속일 뿐 '/'가 아니여도 됨.
+        'first': (context) => DatabaseApp(database),
         // pickme no need to send a db object
-        '/add': (context) => AddTodoApp(),
+        'second': (context) => AddTodoApp(),
         '/clearList': (context) => ClearTodoList(database),
       },
     );
@@ -35,22 +36,32 @@ class MyApp extends StatelessWidget {
             "CREATE TABLE $tableName($columnId INTEGER PRIMARY KEY AUTOINCREMENT, "
             "$columnTitle TEXT, $columnContent TEXT, $columnActive BOOL)");
       },
-      version: 1,
+      version: 1, // pickme to migrate database. 자세한 설명은 라이브러리 사이트에 있습니다.
     );
   }
 }
 
 class DatabaseApp extends StatefulWidget {
   final Future<Database> db;
-
   DatabaseApp(this.db);
 
   @override
-  State<StatefulWidget> createState() => _DatabaseAppState();
+  State<StatefulWidget> createState() {
+    return _DatabaseAppState();
+  }
+  // pickme 같은 것. 아래는 dart의 lambda 문법
+  // @override
+  // State<StatefulWidget> createState() => _DatabaseAppState();
 }
 
 class _DatabaseAppState extends State<DatabaseApp> {
   late Future<List<Todo>> todoList;
+
+  @override
+  void initState() {
+    super.initState();
+    todoList = getTodos();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +103,7 @@ class _DatabaseAppState extends State<DatabaseApp> {
                     itemCount: snapshot.data?.length,
                   );
                 } else {
+                  // pickme 바꿔보자
                   return Text('No data!');
                 }
             }
@@ -103,22 +115,19 @@ class _DatabaseAppState extends State<DatabaseApp> {
       )),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          final todo = await Navigator.of(context).pushNamed('/add') as Todo;
-          // pickme casting is mandatory.
-          debugPrint('todo data : ${todo.title}');
-          _insertTodo(todo);
+          final todo = await Navigator.of(context).pushNamed('second');
+
+          if (todo != null) {
+            // pickme casting is mandatory.
+            debugPrint('todo data : ${(todo as Todo).title}');
+            _insertTodo(todo);
+          }
         },
         child: Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation
           .endFloat, // This trailing comma makes auto-formatting nicer for build methods.
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    todoList = getTodos();
   }
 
   // (C)REATE insert todo item
