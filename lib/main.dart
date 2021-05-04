@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'addTodo.dart';
+import 'add_todo.dart';
 import 'todo.dart';
 
 void main() {
@@ -33,15 +33,19 @@ class MyApp extends StatelessWidget {
             "CREATE TABLE $tableName($columnId INTEGER PRIMARY KEY AUTOINCREMENT, "
             "$columnTitle TEXT, $columnContent TEXT, $columnActive BOOL)");
       },
-      version: 1,
+      version: 1, // pickme to migrate database. 자세한 설명은 라이브러리 사이트에 있습니다.
     );
   }
 }
 
 class DatabaseApp extends StatefulWidget {
   final Future<Database> db;
-
   DatabaseApp(this.db);
+
+  // @override
+  // State<StatefulWidget> createState() {
+  //   return _DatabaseAppState();
+  // }
 
   @override
   State<StatefulWidget> createState() => _DatabaseAppState();
@@ -49,6 +53,12 @@ class DatabaseApp extends StatefulWidget {
 
 class _DatabaseAppState extends State<DatabaseApp> {
   late Future<List<Todo>> todoList;
+
+  @override
+  void initState() {
+    super.initState();
+    todoList = getTodos();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,12 +110,6 @@ class _DatabaseAppState extends State<DatabaseApp> {
       floatingActionButtonLocation: FloatingActionButtonLocation
           .endFloat, // This trailing comma makes auto-formatting nicer for build methods.
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    todoList = getTodos();
   }
 
   // (C)REATE insert todo item
